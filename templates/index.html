@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Visualization Project 2: PCA and MDS</title>
+    <script src="https://d3js.org/d3.v4.min.js" charset="utf-8"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="../static/styles/ScreePlot.css">
+    <link rel="stylesheet" type="text/css" href="../static/styles/index.css">
+    <script type="text/javascript" >
+        var data = {{ data.chart_data | safe }}
+    </script>
+    <script src="../static/styles/ScreePlot.css"></script>
+    <script src="../static/ScreePlot.js"></script>
+    <script src="../static/styles/index.css"></script>
+
+</head>
+<body>
+<h1 style="background-color: aquamarine; text-align: center" >IMDb Movie Data Analysis & Dimensionality Reduction by PCA, MDS and Scatterplot Matrix</h1>
+
+<select id="dataVariable">
+<option value="screeOriginal" selected="selected">View the Scree plot for original data</option>
+<option value="screeRandom" >View the Scree plot for Random Sampling</option>
+<option value="screeStratified">View the Scree plot for Stratified Sampling</option>
+<option value="pcaTopTwo_no_sampling">View the data projected on top two PCA components(original data)</option>
+<option value="mdsEuclidian_no_sampling">View MDS with Euclidian distance(original data)</option>
+<option value="mdsCorrelation_no_sampling">View MDS with correlation distance(original data)</option>
+<option value="scatterplotMatrix_no_sampling">View the scatterplot matrix(original data)</option>
+<option value="pcaTopTwo_random_samples">View the data projected on top two PCA components(random samples)</option>
+<option value="mdsEuclidian_random_samples">View MDS with Euclidian distance(random samples)</option>
+<option value="mdsCorrelation_random_samples">View MDS with correlation distance(random samples)</option>
+<option value="scatterplotMatrix_random_samples">View the scatterplot matrix(random samples)</option>
+<option value="pcaTopTwo_stratified_samples">View the data projected on top two PCA components(stratified samples)</option>
+<option value="mdsEuclidian_stratified_samples">View MDS with Euclidian distance(stratified samples)</option>
+<option value="mdsCorrelation_stratified_samples">View MDS with correlation distance(stratified samples)</option>
+<option value="scatterplotMatrix_stratified_samples">View the scatterplot matrix(stratified samples)</option>
+</select>
+<button class="dropbtn" id="variable" onclick="navigationFunction()">Update the page!</button>
+<div id="screePlot"></div>
+
+<script>
+var data = {{ data.chart_data | safe }}
+
+function navigationFunction(){
+    var dataStr = document.getElementById("dataVariable");
+    console.log(dataStr);
+	var dataVal = dataStr.options[dataStr.selectedIndex].value;
+	console.log(dataVal);
+
+	if(dataVal == "screeOriginal"){
+        scree_plot("no_sampling_scree_plot");
+    }
+	else if(dataVal == "screeRandom"){
+	    scree_plot("random_samples_scree_plot");
+    }
+	else if(dataVal == "screeStratified"){
+	    scree_plot("stratified_samples_scree_plot");
+    }
+	else if(dataVal == "pcaTopTwo_no_sampling"){
+	    pca_plot("pca_no_sampling_projected_points");
+    }
+	else if(dataVal == "mdsEuclidian_no_sampling"){
+	    mds("euclidian_points_no_sampling");
+        data = data["pca_no_sampling_projected_points"]
+    }
+	else if(dataVal == "mdsCorrelation_no_sampling"){
+	    mds("correlation_points_no_sampling");
+    }
+	else if(dataVal == "scatterplotMatrix_no_sampling"){
+	    scatterplot_matrix("scatterplot_matrix_data_no_sampling");
+    }
+	else if(dataVal == "pcaTopTwo_random_samples"){
+	    pca_plot("pca_random_sampling_projected_points");
+    }
+	else if(dataVal == "mdsEuclidian_random_samples"){
+	    mds("euclidian_points_random_samples");
+        data = data["pca_random_sampling_projected_points"]
+    }
+	else if(dataVal == "mdsCorrelation_random_samples"){
+	    mds("correlation_points_random_samples");
+    }
+	else if(dataVal == "scatterplotMatrix_random_samples"){
+	    scatterplot_matrix("scatterplot_matrix_data_random_samples");
+    }
+	else if(dataVal == "pcaTopTwo_stratified_samples"){
+	    pca_plot("pca_stratified_sampling_projected_points");
+    }
+	else if(dataVal == "mdsEuclidian_stratified_samples"){
+	    mds("euclidian_points_stratified_samples");
+        data = data["pca_stratified_sampling_projected_points"]
+    }
+	else if(dataVal == "mdsCorrelation_stratified_samples"){
+	    mds("correlation_points_stratified_samples");
+    }
+	else if(dataVal == "scatterplotMatrix_stratified_samples"){
+	    scatterplot_matrix("scatterplot_matrix_data_stratified_samples");
+    }
+
+
+}
+
+function scree_plot(scree_plot_data_string) {
+    d3.select("svg").remove()
+    document.getElementById("screePlot").innerHTML = "";
+    var screePlotCSSOptions = {
+        domElement: "#screePlot",
+        width: $('#screePlot').parent().width(),
+        width: 1200,
+        height: 650,
+        margin: {top: 20, right: 20, bottom: 20, left: 35},
+        showGridlines: true,
+        noOfGridlines: 10,
+        showAxes: false,
+        svgBackground: '#FFFFFF',
+        barFill: '#3498db',
+        barStroke: '#FFFFFF',
+        barStrokeWidth: 0,
+        selBarFill: '#2ECC71',
+        selBarStroke: '#FFFFFF',
+        selBarStrokeWidth: 0,
+        circleFill: '#3498db',
+        circleStroke: '#FFFFFF',
+        circleStrokeWidth: 1,
+        selCircleFill: '#2ECC71',
+        selCircleStroke: '#FFFFFF',
+        selCircleStrokeWidth: 1,
+        lineStrokeWidth: 2,
+        filterLineStrokeWidth: 2,
+        nodeTextColor: "#ffff00"
+    };
+
+    if(scree_plot_data_string == "no_sampling_scree_plot") {
+        var screePlotDataOptions = {
+            factorSelected: 1
+        }
+    }
+    else {
+        var screePlotDataOptions = {
+            factorSelected: 2
+        }
+    }
+
+    console.log(data[scree_plot_data_string])
+
+    var screePlot = new ScreePlot(screePlotCSSOptions);
+    screePlot.initialize(); // initializes the SVG and UI elements
+    screePlot.render(data[scree_plot_data_string], screePlotDataOptions);
+}
+
+function pca_plot(pca_data_string) {
+        d3.select("svg").remove()
+        pca_data = data[pca_data_string]
+        var body = d3.select('body')
+
+        var body = d3.select('body')
+        var margin = {top: 50, right: 50, bottom: 50, left: 50}
+        var h = 750 - margin.top - margin.bottom
+        var w = 750 - margin.left - margin.right
+
+        var colorScale = d3.scaleOrdinal()
+            .range(d3.schemeCategory20)
+        var xScale = d3.scaleLinear()
+            .domain([
+                d3.min([-6, d3.min(pca_data, function (d) {
+                    return d.x
+                })]),
+                d3.max([-6, d3.max(pca_data, function (d) {
+                    return d.x
+                })])
+            ])
+            .range([0, w])
+        var yScale = d3.scaleLinear()
+            .domain([
+                d3.min([-6, d3.min(pca_data, function (d) {
+                    return d.y
+                })]),
+                d3.max([-6, d3.max(pca_data, function (d) {
+                    return d.y
+                })])
+            ])
+            .range([h, 0])
+
+        var svg = body.append('svg')
+            .attr('height', h + margin.top + margin.bottom)
+            .attr('width', w + margin.left + margin.right)
+            .append('g')
+            .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')')
+        var xAxis = d3.axisBottom()
+            .scale(xScale)
+            .ticks(10)
+        var yAxis = d3.axisLeft()
+            .scale(yScale)
+            .ticks(10)
+        var circles = svg.selectAll('circle')
+            .data(pca_data)
+            .enter()
+            .append('circle')
+            .attr('cx', function (d) {
+                return xScale(d.x)
+            })
+            .attr('cy', function (d) {
+                return yScale(d.y)
+            })
+            .attr('r', '3')
+            .attr('stroke', 'black')
+            .attr('stroke-width', 1)
+            .attr('fill', function (d, i) {
+                return colorScale(i)
+            })
+
+        svg.append('g')
+            .attr('class', 'axis')
+            .attr('id', 'xAxis')
+            .attr('transform', 'translate(0,' + h + ')')
+            .call(xAxis)
+            .append('text') // X-axis Label
+            .attr('id', 'xAxisLabel')
+            .attr('y', -10)
+            .attr('x', w)
+            .attr('dy', '.71em')
+            .style('text-anchor', 'end')
+            .text('PC1')
+        svg.append('g')
+            .attr('class', 'axis')
+            .attr('id', 'yAxis')
+            .call(yAxis)
+            .append('text') // y-axis Label
+            .attr('id', 'yAxisLabel')
+            .attr('transform', 'rotate(-90)')
+            .attr('x', 0)
+            .attr('y', 5)
+            .attr('dy', '.71em')
+            .style('text-anchor', 'end')
+            .text('PC2')
+
+        function yChange() {
+            var value = this.value
+            yScale // change the yScale
+                .domain([
+                    d3.min([-6, d3.min(pca_data, function (d) {
+                        return d[value]
+                    })]),
+                    d3.max([-6, d3.max(pca_data, function (d) {
+                        return d[value]
+                    })])
+                ])
+            yAxis.scale(yScale)
+            d3.select('#yAxis')
+                .call(yAxis)
+            d3.select('#yAxisLabel')
+                .text(value)
+            d3.selectAll('circle')
+
+                .attr('cy', function (d) {
+                    return yScale(d[value])
+                })
+        }
+
+        function xChange() {
+            var value = this.value
+            xScale // change the xScale
+                .domain([
+                    d3.min([-6, d3.min(pca_data, function (d) {
+                        return d[value]
+                    })]),
+                    d3.max([-6, d3.max(pca_data, function (d) {
+                        return d[value]
+                    })])
+                ])
+            xAxis.scale(xScale)
+            d3.select('#xAxis')
+                .call(xAxis)
+            d3.select('#xAxisLabel')
+                .text(value)
+            d3.selectAll('circle')
+                .transition().duration(1)
+                .attr('cx', function (d) {
+                    return xScale(d[value])
+                })
+        }
+
+    }
+
+function scatterplot_matrix(scatterplot_data) {
+    d3.select("svg").remove()
+    scatterplot_matrix_data = data[scatterplot_data]
+    var width = 960,
+    size = 230,
+    padding = 20;
+
+var x = d3.scaleLinear()
+.range([padding / 2, size - padding / 2]);
+
+var y = d3.scaleLinear()
+.range([size - padding / 2, padding / 2]);
+
+var xAxis = d3.axisBottom()
+.scale(x)
+.ticks(6);
+
+var yAxis = d3.axisLeft()
+.scale(y)
+.ticks(6);
+
+var color = d3.scaleOrdinal().range(d3.schemeCategory10);
+
+
+var domainByTrait = {},
+    traits = [0, 1, 2],
+    n = traits.length;
+
+traits.forEach(function (trait) {
+    domainByTrait[trait] = d3.extent(scatterplot_matrix_data, function (d) {
+        return d[trait];
+    });
+});
+
+console.log(domainByTrait)
+
+xAxis.tickSize(size * n);
+yAxis.tickSize(-size * n);
+
+var svg = d3.select("body").append("svg")
+    .attr("width", size * n + padding)
+    .attr("height", size * n + padding)
+    .append("g")
+    .attr("transform", "translate(" + padding + "," + padding / 2 + ")");
+
+svg.selectAll(".x.axis")
+    .data(traits)
+    .enter().append("g")
+    .attr("class", "x axis")
+    .attr("transform", function (d, i) {
+        return "translate(" + (n - i - 1) * size + ",0)";
+    })
+    .each(function (d) {
+        x.domain(domainByTrait[d]);
+        d3.select(this).call(xAxis);
+    });
+
+svg.selectAll(".y.axis")
+    .data(traits)
+    .enter().append("g")
+    .attr("class", "y axis")
+    .attr("transform", function (d, i) {
+        return "translate(0," + i * size + ")";
+    })
+    .each(function (d) {
+        y.domain(domainByTrait[d]);
+        d3.select(this).call(yAxis);
+    });
+
+var cell = svg.selectAll(".cell")
+    .data(cross(traits, traits))
+    .enter().append("g")
+    .attr("class", "cell")
+    .attr("transform", function (d) {
+        return "translate(" + (n - d.i - 1) * size + "," + d.j * size + ")";
+    })
+    .each(plot);
+
+cell.filter(function (d) {
+    return d.i === d.j;
+}).append("text")
+    .attr("x", padding)
+    .attr("y", padding)
+    .attr("dy", ".71em")
+    .text(function (d) {
+        return d.x;
+    });
+
+function plot(p) {
+    var cell = d3.select(this);
+
+    x.domain(domainByTrait[p.x]);
+    y.domain(domainByTrait[p.y]);
+
+    cell.append("rect")
+        .attr("class", "frame")
+        .attr("x", padding / 2)
+        .attr("y", padding / 2)
+        .attr("width", size - padding)
+        .attr("height", size - padding);
+
+    cell.selectAll("circle")
+        .data(scatterplot_matrix_data)
+        .enter().append("circle")
+        .attr("cx", function (d) {
+            return x(d[p.x]);
+        })
+        .attr("cy", function (d) {
+            return y(d[p.y]);
+        })
+        .attr("r", 4)
+        .style("fill", function (d) {
+            return color(d.species);
+        });
+}
+
+
+function cross(a, b) {
+    var c = [], n = a.length, m = b.length, i, j;
+    for (i = -1; ++i < n;) for (j = -1; ++j < m;) c.push({x: a[i], i: i, y: b[j], j: j});
+    return c;
+}
+}
+
+function mds(mds_string) {
+        d3.select("svg").remove()
+        mds_data = data[mds_string]
+        var body = d3.select('body')
+
+        console.log("mds corr")
+        console.log(mds_data)
+        var body = d3.select('body')
+        var margin = {top: 50, right: 50, bottom: 50, left: 50}
+        var h = 750 - margin.top - margin.bottom
+        var w = 750 - margin.left - margin.right
+
+        var colorScale = d3.scaleOrdinal()
+            .range(d3.schemeCategory20)
+        var xScale = d3.scaleLinear()
+            .domain([
+                d3.min([-6, d3.min(mds_data, function (d) {
+                    return d.x
+                })]),
+                d3.max([-6, d3.max(mds_data, function (d) {
+                    return d.x
+                })])
+            ])
+            .range([0, w])
+        var yScale = d3.scaleLinear()
+            .domain([
+                d3.min([-6, d3.min(mds_data, function (d) {
+                    return d.y
+                })]),
+                d3.max([-6, d3.max(mds_data, function (d) {
+                    return d.y
+                })])
+            ])
+            .range([h, 0])
+
+        var svg = body.append('svg')
+            .attr('height', h + margin.top + margin.bottom)
+            .attr('width', w + margin.left + margin.right)
+            .append('g')
+            .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')')
+        var xAxis = d3.axisBottom()
+            .scale(xScale)
+            .ticks(10)
+        var yAxis = d3.axisLeft()
+            .scale(yScale)
+            .ticks(10)
+        var circles = svg.selectAll('circle')
+            .data(mds_data)
+            .enter()
+            .append('circle')
+            .attr('cx', function (d) {
+                return xScale(d.x)
+            })
+            .attr('cy', function (d) {
+                return yScale(d.y)
+            })
+            .attr('r', '3')
+            .attr('stroke', 'black')
+            .attr('stroke-width', 1)
+            .attr('fill', function (d, i) {
+                return colorScale(i)
+            })
+
+        svg.append('g')
+            .attr('class', 'axis')
+            .attr('id', 'xAxis')
+            .attr('transform', 'translate(0,' + h + ')')
+            .call(xAxis)
+            .append('text')
+            .attr('id', 'xAxisLabel')
+            .attr('y', -10)
+            .attr('x', w)
+            .attr('dy', '.71em')
+            .style('text-anchor', 'end')
+            .text('PC1')
+        svg.append('g')
+            .attr('class', 'axis')
+            .attr('id', 'yAxis')
+            .call(yAxis)
+            .append('text')
+            .attr('id', 'yAxisLabel')
+            .attr('transform', 'rotate(-90)')
+            .attr('x', 0)
+            .attr('y', 5)
+            .attr('dy', '.71em')
+            .style('text-anchor', 'end')
+            .text('PC2')
+
+        function yChange() {
+            var value = this.value
+            yScale
+                .domain([
+                    d3.min([-6, d3.min(mds_data, function (d) {
+                        return d[value]
+                    })]),
+                    d3.max([-6, d3.max(mds_data, function (d) {
+                        return d[value]
+                    })])
+                ])
+            yAxis.scale(yScale)
+            d3.select('#yAxis')
+                .call(yAxis)
+            d3.select('#yAxisLabel')
+                .text(value)
+            d3.selectAll('circle')
+                .attr('cy', function (d) {
+                    return yScale(d[value])
+                })
+        }
+
+        function xChange() {
+            var value = this.value
+            xScale
+                .domain([
+                    d3.min([-6, d3.min(mds_data, function (d) {
+                        return d[value]
+                    })]),
+                    d3.max([-6, d3.max(mds_data, function (d) {
+                        return d[value]
+                    })])
+                ])
+            xAxis.scale(xScale)
+            d3.select('#xAxis')
+                .call(xAxis)
+            d3.select('#xAxisLabel')
+                .text(value)
+            d3.selectAll('circle')
+                .transition().duration(1)
+                .attr('cx', function (d) {
+                    return xScale(d[value])
+                })
+        }
+    }
+
+</script>
+</body>
+</html>
